@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -36,8 +37,23 @@ type timeResponse struct {
 	ISO       string `json:"iso_datetime"` // full ISO timestamp
 }
 
+func extractClock(iso string) (string, error) {
+	if t, err := time.Parse(time.RFC3339Nano, iso); err == nil {
+		return t.Format("15:04:05"), nil
+	}
+	if t, err := time.Parse(time.RFC3339, iso); err == nil {
+		return t.Format("15:04:05"), nil
+	}
+	return "", fmt.Errorf("could not parse datetime")
+}
+
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 
 	resp, err := http.Get("http://worldtimeapi.org/api/timezone")
 	if err != nil {
@@ -73,6 +89,28 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 
 	tzBody, _ := io.ReadAll(resp2.Body)
 
+	// decode api resp into struct
+	var apiResp worldTimeAPI
+	if err := json.Unmarshal(tzBody, &apiResp); err != nil {
+		http.Error(w, "failed to decode worldtimeapi response", http.StatusInternalServerError)
+		return
+	}
+
+	// extract just HH:MM:SS
+	clock, err := extractClock(apiResp.DateTime)
+	if err != nil {
+		http.Error(w, "failed to parse time", http.StatusInternalServerError)
+		return
+	}
+
+	// build and return clean response
+	response := timeResponse{
+		Time:      clock,
+		Timezone:  apiResp.TimeZone,
+		UTCOffset: apiResp.UTCOffset,
+		ISO:       apiResp.DateTime,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(tzBody)
+	json.NewEncoder(w).Encode(response)
 }
