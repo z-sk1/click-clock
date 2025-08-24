@@ -22,11 +22,18 @@ func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
-// what WorldTimeAPI returns
-type worldTimeAPI struct {
-	DateTime  string `json:"datetime"`
-	TimeZone  string `json:"timezone"`
-	UTCOffset string `json:"utc_offset"`
+// what timeAPI returns
+type timeAPI struct {
+	Year        int     `json:"year"`
+	Month       int     `json:"month"`
+	Day         int     `json:"day"`
+	Hour        int     `json:"hour"`
+	Minute      int     `json:"minute"`
+	Second      int     `json:"seconds"`
+	Millisecond int     `json:"milliSeconds"`
+	DateTime    string  `json:"dateTime"`
+	TimeZone    string  `json:"timeZone"`
+	UTCOffset   *string `json:"utcOffset"`
 }
 
 // what the server will return to client
@@ -37,39 +44,63 @@ type timeResponse struct {
 	ISO       string `json:"iso_datetime"` // full ISO timestamp
 }
 
-func extractClock(iso string) (string, error) {
-	if t, err := time.Parse(time.RFC3339Nano, iso); err == nil {
-		return t.Format("15:04:05"), nil
+var timezones []string
+
+func getTimezones() []string {
+	if len(timezones) > 0 {
+		return timezones
 	}
-	if t, err := time.Parse(time.RFC3339, iso); err == nil {
-		return t.Format("15:04:05"), nil
+
+	tr := &http.Transport{
+		TLSHandshakeTimeout: 30 * time.Second,
 	}
-	return "", fmt.Errorf("could not parse datetime")
+	client := &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: tr,
+	}
+
+	resp, err := client.Get("https://timeapi.io/api/TimeZone/AvailableTimeZones")
+	if err != nil {
+		log.Fatalf("Failed to fetch timezone list: %v", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&timezones); err != nil {
+		log.Fatalf("Failed to decode timezone list: %v", err)
+		return nil
+	}
+	log.Printf("Loaded %d timezones", len(timezones))
+	return timezones
 }
 
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
+
+	tr := &http.Transport{
+		TLSHandshakeTimeout: 30 * time.Second,
+	}
+	client := &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: tr,
+	}
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	resp, err := http.Get("http://worldtimeapi.org/api/timezone")
-	if err != nil {
-		http.Error(w, "Failed to fetch time:", http.StatusInternalServerError)
+	zones := getTimezones()
+	if zones == nil {
+		http.Error(w, "Timezone list unavailable", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
-
-	var timezones []string
-	json.NewDecoder(resp.Body).Decode(&timezones)
 
 	city := strings.Title(strings.ToLower(r.URL.Query().Get("city")))
 	var tz string
-	for _, t := range timezones {
+	for _, t := range zones {
 		parts := strings.Split(t, "/")
-		if len(parts) == 2 && strings.EqualFold(parts[len(parts)-1], city) {
+		if strings.EqualFold(parts[len(parts)-1], city) {
 			tz = t
 			break
 		}
@@ -80,34 +111,52 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// call timezone
-	resp2, err := http.Get(fmt.Sprintf("http://worldtimeapi.org/api/timezone/%s", tz))
+	resp, err := client.Get(fmt.Sprintf("https://timeapi.io/api/Time/current/zone?timeZone=%s", tz))
 	if err != nil {
 		http.Error(w, "timezone request failed", http.StatusInternalServerError)
 		return
 	}
-	defer resp2.Body.Close()
+	defer resp.Body.Close()
 
-	tzBody, _ := io.ReadAll(resp2.Body)
+	tzBody, _ := io.ReadAll(resp.Body)
 
 	// decode api resp into struct
-	var apiResp worldTimeAPI
+	var apiResp timeAPI
 	if err := json.Unmarshal(tzBody, &apiResp); err != nil {
 		http.Error(w, "failed to decode worldtimeapi response", http.StatusInternalServerError)
 		return
 	}
 
 	// extract just HH:MM:SS
-	clock, err := extractClock(apiResp.DateTime)
-	if err != nil {
-		http.Error(w, "failed to parse time", http.StatusInternalServerError)
-		return
+	clock := fmt.Sprintf("%02d:%02d:%02d", apiResp.Hour, apiResp.Minute, apiResp.Second)
+
+	offset := ""
+	if apiResp.UTCOffset != nil {
+		offset = *apiResp.UTCOffset
+	} else {
+		loc, err := time.LoadLocation(apiResp.TimeZone)
+		if err == nil {
+			t := time.Now().In(loc)
+			_, offsetSecs := t.Zone()
+			hours := offsetSecs / 3600
+			mins := (offsetSecs % 3600) / 60 // handle non-hour offsets like India (+05:30)
+
+			sign := "+"
+			if hours < 0 || mins < 0 {
+				sign = "-"
+				hours = -hours
+				mins = -mins
+			}
+
+			offset = fmt.Sprintf("%s%02d:%02d", sign, hours, mins)
+		}
 	}
 
 	// build and return clean response
 	response := timeResponse{
 		Time:      clock,
 		Timezone:  apiResp.TimeZone,
-		UTCOffset: apiResp.UTCOffset,
+		UTCOffset: offset,
 		ISO:       apiResp.DateTime,
 	}
 
