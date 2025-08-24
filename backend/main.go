@@ -10,6 +10,27 @@ import (
 	"time"
 )
 
+var cachedTimezones []string
+var lastCacheTime time.Time
+
+func init() {
+	go func() {
+		for {
+			fmt.Println("Fetching timezone list...")
+			zones, err := getTimezones()
+			if err != nil {
+				log.Println("Failed to fetch timezones:", err)
+			} else {
+				cachedTimezones = zones
+				lastCacheTime = time.Now()
+				fmt.Printf("Loaded %d timezones\n", len(cachedTimezones))
+			}
+
+			time.Sleep(24 * time.Hour) // wait 24h before refreshing again
+		}
+	}()
+}
+
 func main() {
 	http.HandleFunc("/time", timeHandler)
 	fmt.Println("Time server running on :8080")
@@ -46,34 +67,36 @@ type timeResponse struct {
 	Date      string
 }
 
-var timezones []string
-
-func getTimezones() []string {
-	if len(timezones) > 0 {
-		return timezones
-	}
-
+func getTimezones() ([]string, error) {
 	tr := &http.Transport{
-		TLSHandshakeTimeout: 30 * time.Second,
+		TLSHandshakeTimeout: 60 * time.Second,
 	}
 	client := &http.Client{
-		Timeout:   30 * time.Second,
+		Timeout:   60 * time.Second,
 		Transport: tr,
+	}
+
+	if time.Since(lastCacheTime) < 24*time.Hour && cachedTimezones != nil {
+		return cachedTimezones, nil
 	}
 
 	resp, err := client.Get("https://timeapi.io/api/TimeZone/AvailableTimeZones")
 	if err != nil {
-		log.Fatalf("Failed to fetch timezone list: %v", err)
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&timezones); err != nil {
-		log.Fatalf("Failed to decode timezone list: %v", err)
-		return nil
+	var zones []string
+	if err := json.NewDecoder(resp.Body).Decode(&zones); err != nil {
+		return nil, err
 	}
-	log.Printf("Loaded %d timezones", len(timezones))
-	return timezones
+
+	cachedTimezones = zones
+	lastCacheTime = time.Now()
+
+	fmt.Printf("Loaded %d timezones", len(cachedTimezones))
+
+	return zones, nil
 }
 
 func timeHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,15 +115,9 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zones := getTimezones()
-	if zones == nil {
-		http.Error(w, "Timezone list unavailable", http.StatusInternalServerError)
-		return
-	}
-
 	city := strings.Title(strings.ToLower(r.URL.Query().Get("city")))
 	var tz string
-	for _, t := range zones {
+	for _, t := range cachedTimezones {
 		parts := strings.Split(t, "/")
 		if strings.EqualFold(parts[len(parts)-1], city) {
 			tz = t
@@ -125,7 +142,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	// decode api resp into struct
 	var apiResp timeAPI
 	if err := json.Unmarshal(tzBody, &apiResp); err != nil {
-		http.Error(w, "failed to decode worldtimeapi response", http.StatusInternalServerError)
+		http.Error(w, "failed to decode timeapi response", http.StatusInternalServerError)
 		return
 	}
 
