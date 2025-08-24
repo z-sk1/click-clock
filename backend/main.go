@@ -13,6 +13,7 @@ import (
 func main() {
 	http.HandleFunc("/time", timeHandler)
 	fmt.Println("Time server running on :8080")
+	fmt.Println("Press CTRL+C to exit")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -38,10 +39,11 @@ type timeAPI struct {
 
 // what the server will return to client
 type timeResponse struct {
-	Time      string `json:"time"`         // HH:MM:SS
+	Time      string `json:"time"`         // HH:MM
 	Timezone  string `json:"timezone"`     // e.g. Asia/Dubai
 	UTCOffset string `json:"utc_offset"`   // e.g. +04:00
 	ISO       string `json:"iso_datetime"` // full ISO timestamp
+	Date      string
 }
 
 var timezones []string
@@ -128,7 +130,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// extract just HH:MM:SS
-	clock := fmt.Sprintf("%02d:%02d:%02d", apiResp.Hour, apiResp.Minute, apiResp.Second)
+	clock := fmt.Sprintf("%02d:%02d", apiResp.Hour, apiResp.Minute)
 
 	offset := ""
 	if apiResp.UTCOffset != nil {
@@ -152,12 +154,15 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	dateOnly := strings.Split(apiResp.DateTime, "T")[0]
+
 	// build and return clean response
 	response := timeResponse{
 		Time:      clock,
 		Timezone:  apiResp.TimeZone,
 		UTCOffset: offset,
 		ISO:       apiResp.DateTime,
+		Date:      dateOnly,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
