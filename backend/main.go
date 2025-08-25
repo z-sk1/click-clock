@@ -79,8 +79,9 @@ type timeResponse struct {
 
 func getTimezones() ([]string, error) {
 	tr := &http.Transport{
-		TLSHandshakeTimeout: 60 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
+
 	client := &http.Client{
 		Timeout:   60 * time.Second,
 		Transport: tr,
@@ -113,10 +114,10 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
 	tr := &http.Transport{
-		TLSHandshakeTimeout: 30 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
 	client := &http.Client{
-		Timeout:   30 * time.Second,
+		Timeout:   60 * time.Second,
 		Transport: tr,
 	}
 
