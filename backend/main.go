@@ -14,12 +14,22 @@ var cachedTimezones []string
 var lastCacheTime time.Time
 
 func init() {
+	fmt.Println("Fetching timezone list...")
+	zones, err := getTimezones()
+	if err != nil {
+		log.Println("Failed to fetch timezones:", err)
+	} else {
+		cachedTimezones = zones
+		lastCacheTime = time.Now()
+		fmt.Printf("Loaded %d timezones\n", len(cachedTimezones))
+	}
+
 	go func() {
 		for {
-			fmt.Println("Fetching timezone list...")
+			fmt.Println("Refreshing timezone list...")
 			zones, err := getTimezones()
 			if err != nil {
-				log.Println("Failed to fetch timezones:", err)
+				log.Println("Failed to refresh timezones:", err)
 			} else {
 				cachedTimezones = zones
 				lastCacheTime = time.Now()
