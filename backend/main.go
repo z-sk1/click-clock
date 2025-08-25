@@ -13,6 +13,14 @@ import (
 var cachedTimezones []string
 var lastCacheTime time.Time
 
+var client = &http.Client{
+	Timeout: 60 * time.Second,
+	Transport: &http.Transport{
+		TLSHandshakeTimeout: 30 * time.Second,
+		ForceAttemptHTTP2:   false,
+	},
+}
+
 func init() {
 	fmt.Println("Fetching timezone list...")
 	zones, err := getTimezones()
@@ -78,20 +86,17 @@ type timeResponse struct {
 }
 
 func getTimezones() ([]string, error) {
-	tr := &http.Transport{
-		TLSHandshakeTimeout: 10 * time.Second,
-	}
-
-	client := &http.Client{
-		Timeout:   60 * time.Second,
-		Transport: tr,
-	}
-
 	if time.Since(lastCacheTime) < 24*time.Hour && cachedTimezones != nil {
 		return cachedTimezones, nil
 	}
 
-	resp, err := client.Get("https://timeapi.io/api/TimeZone/AvailableTimeZones")
+	req, err := http.NewRequest("GET", "https://timeapi.io/api/TimeZone/AvailableTimeZones", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "curl/7.81.0")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -113,14 +118,6 @@ func getTimezones() ([]string, error) {
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
-	tr := &http.Transport{
-		TLSHandshakeTimeout: 10 * time.Second,
-	}
-	client := &http.Client{
-		Timeout:   60 * time.Second,
-		Transport: tr,
-	}
-
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -141,7 +138,14 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// call timezone
-	resp, err := client.Get(fmt.Sprintf("https://timeapi.io/api/Time/current/zone?timeZone=%s", tz))
+	req, err := http.NewRequest("GET", fmt.Sprintf("https://timeapi.io/api/Time/current/zone?timeZone=%s", tz), nil)
+	if err != nil {
+		http.Error(w, "failed to build timezone request", http.StatusInternalServerError)
+		return
+	}
+	req.Header.Set("User-Agent", "curl/7.81.0")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, "timezone request failed", http.StatusInternalServerError)
 		return
