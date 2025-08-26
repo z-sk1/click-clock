@@ -22,6 +22,11 @@ var client = &http.Client{
 }
 
 func init() {
+	showConsole(true)
+	consoleVisible = true
+
+	go setupTray()
+
 	fmt.Println("Fetching timezone list...")
 	zones, err := getTimezones()
 	if err != nil {
