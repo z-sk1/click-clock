@@ -60,7 +60,7 @@ function fetchTime() {
         return;
     }
 
-    fetch(`http://localhost:8080/time?city=${encodeURIComponent(city)}`)
+    fetch(`https://clickclock-service.onrender.com/time?city=${encodeURIComponent(city)}`)
         .then(response => {
             if (!response.ok) {
                 return response.text().then(errorText => {
