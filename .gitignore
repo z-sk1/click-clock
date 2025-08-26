@@ -3,3 +3,7 @@
 .vscode/
 bin/
 obj/
+.fake
+attach.go
+console.go
+tray.go

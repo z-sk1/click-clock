@@ -12,7 +12,7 @@
             <ColumnDefinition Width="3*"/>
             <ColumnDefinition Width="97*"/>
         </Grid.ColumnDefinitions>
-        <Label Grid.Column="1" Content="click clock" HorizontalAlignment="Left" Margin="291,-8,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" Height="80" Width="240" FontSize="48" FontWeight="Bold">
+        <Label Grid.Column="1" Content="click clock" HorizontalAlignment="Left" Margin="226,-8,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5" Height="80" Width="240" FontSize="48" FontWeight="Bold">
             <Label.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform/>
@@ -22,16 +22,16 @@
                 </TransformGroup>
             </Label.RenderTransform>
         </Label>
-        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" RenderTransformOrigin="0.515,0.3" Margin="277,78,241,272" CornerRadius="30,30,30,30" Background="White">
+        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" RenderTransformOrigin="0.515,0.3" Margin="212,78,306,272" CornerRadius="30,30,30,30" Background="White">
             <Border BorderBrush="Black" BorderThickness="1" RenderTransformOrigin="0.515,0.3" Margin="30,93,6,-174" CornerRadius="30,30,30,30" Background="White">
                 <TextBox x:Name="txtResult" HorizontalAlignment="Center" TextWrapping="Wrap" VerticalAlignment="Center" Width="168" Height="99" Cursor="IBeam" AllowDrop="False" BorderThickness="0,0,0,0" FontSize="14" IsReadOnly="True"/>
             </Border>
         </Border>
-        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" RenderTransformOrigin="0.515,0.3" Margin="560,78,86,272" CornerRadius="30,30,30,30" Background="White">
+        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" RenderTransformOrigin="0.515,0.3" Margin="495,78,151,272" CornerRadius="30,30,30,30" Background="White">
             <Button x:Name="btnGet" Content="Get Time" HorizontalAlignment="Center" Height="43" VerticalAlignment="Center" Width="91" Cursor="Hand" Click="btnGet_Click" Background="White" BorderBrush="White" FontSize="16"/>
         </Border>
-        <TextBox x:Name="txtInput" Grid.Column="1" HorizontalAlignment="Left" Height="39" Margin="295,97,0,0" TextWrapping="Wrap" Text="Enter the name of a city..." VerticalAlignment="Top" Width="212" BorderBrush="White" FontSize="18" Foreground="#FF6F6F6F" LostFocus="txtInput_LostFocus" GotFocus="txtInput_GotFocus" KeyDown="txtInput_KeyDown"/>
-        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" Margin="356,341,300,17" Background="White" CornerRadius="30,30,30,30">
+        <TextBox x:Name="txtInput" Grid.Column="1" HorizontalAlignment="Left" Height="39" Margin="230,97,0,0" TextWrapping="Wrap" Text="Enter the name of a city..." VerticalAlignment="Top" Width="212" BorderBrush="White" FontSize="18" Foreground="#FF6F6F6F" LostFocus="txtInput_LostFocus" GotFocus="txtInput_GotFocus" KeyDown="txtInput_KeyDown"/>
+        <Border BorderBrush="Black" BorderThickness="1" Grid.Column="1" Margin="291,341,365,17" Background="White" CornerRadius="30,30,30,30">
             <Button x:Name="btnCopy" Content="Copy" HorizontalAlignment="Center" VerticalAlignment="Center" Height="45" Width="79" BorderBrush="White" Background="White" Click="btnCopy_Click" FontSize="18"/>
         </Border>
 

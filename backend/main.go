@@ -51,9 +51,9 @@ func init() {
 
 func main() {
 	http.HandleFunc("/time", timeHandler)
-	fmt.Println("Time server running on :8080")
+	fmt.Println("Time server running on :8081")
 	fmt.Println("Press CTRL+C to exit")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }
 
 func enableCORS(w http.ResponseWriter) {
