@@ -13,13 +13,15 @@ function updateDisplay(data) {
 
     // Build the UTC string
     const timezone = "UTC" + data.utc_offset; // "UTC+04:00"
+    const time = data.time;
+    const date = data.Date;
 
     resultDiv.innerHTML = `
     <p>Time in ${cityData}:</p>
-    <p>Time: ${data.time}</p>
+    <p>Time: ${time}</p>
     <p>Region: ${regionData}</p>
     <p>Timezone: ${timezone}</p>
-    <p>Date: ${data.Date}</p>
+    <p>Date: ${date}</p>
     <button onclick = "copyData()" id = "copyBtn">Copy</button>`
 }
 
