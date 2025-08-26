@@ -8,3 +8,4 @@ attach.go
 console.go
 tray.go
 clickclock.log
+assets/
