@@ -79,7 +79,7 @@ namespace clickclockClient
             {
                 try
                 {
-                    string url = $"https://clickclock-service.onrender.com/time?city={Uri.EscapeDataString(city)}";
+                    string url = $"http://localhost:8081/time?city={Uri.EscapeDataString(city)}";
                     HttpResponseMessage response = await client.GetAsync(url);
 
                     if (!response.IsSuccessStatusCode)
