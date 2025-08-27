@@ -23,13 +23,17 @@ var client = &http.Client{
 
 func init() {
 	fmt.Println("Fetching timezone list...")
-	zones, err := getTimezones()
-	if err != nil {
+
+	for i := 0; i < 5; i++ {
+		zones, err := getTimezones()
+		if err == nil {
+			cachedTimezones = zones
+			lastCacheTime = time.Now()
+			fmt.Printf("Loaded %d timezones\n", len(cachedTimezones))
+			break
+		}
 		log.Println("Failed to fetch timezones:", err)
-	} else {
-		cachedTimezones = zones
-		lastCacheTime = time.Now()
-		fmt.Printf("Loaded %d timezones\n", len(cachedTimezones))
+		time.Sleep(2 * time.Second)
 	}
 
 	go func() {
@@ -43,8 +47,7 @@ func init() {
 				lastCacheTime = time.Now()
 				fmt.Printf("Loaded %d timezones\n", len(cachedTimezones))
 			}
-
-			time.Sleep(24 * time.Hour) // wait 24h before refreshing again
+			time.Sleep(24 * time.Hour)
 		}
 	}()
 }
@@ -121,6 +124,15 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
+	}
+
+	if cachedTimezones == nil {
+		zones, err := getTimezones()
+		if err != nil {
+			http.Error(w, "timezone request failed", http.StatusInternalServerError)
+			return
+		}
+		cachedTimezones = zones
 	}
 
 	city := strings.Title(strings.ToLower(r.URL.Query().Get("city")))
