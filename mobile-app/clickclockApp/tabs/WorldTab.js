@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import React, { useState, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { styles } from '../App';
@@ -41,7 +42,7 @@ export default function WorldTab() {
                         <Text style = {styles.resultText}>Time: {displayData.time}</Text>
                         <Text style = {styles.resultText}>Region: {displayData.regionData}</Text>
                         <Text style = {styles.resultText}>Timezone: {displayData.finalTimezone}</Text>
-                        <Text style = {styles.resultText}>Data: {displayData.date}</Text>
+                        <Text style = {styles.resultText}>Date: {displayData.Date}</Text>
 
                         <TouchableOpacity
                         style = {[styles.copyButton, copyBtnPressed && styles.buttonPressed]}
@@ -77,10 +78,32 @@ export default function WorldTab() {
             cityData: cityData,
             finalTimezone: timezone,
         }
+
+        setDisplayData(newDisplayData);
     }
 
     async function copyData() {
+        if (!txt.trim() || !displayData) {
+            Alert.alert("Nothing to copy", "Please fetch weather data first.");
+            return;
+        }
 
+
+        const text = `
+        City: ${displayData.cityData}
+        Time: ${displayData.time}
+        Region: ${displayData.regionData}
+        Timezone: ${displayData.finalTimezone}
+        Data: ${displayData.Date}
+        `.trim();
+
+        try {
+            await Clipboard.setStringAsync(text);
+            setCopyBtnText("Copied!")
+            setTimeout(() => setCopyBtnText("Copy"), 1500);
+        } catch (err) {
+            Alert.alert("Copy failure:", err.message || "Unknown message");
+        }
     }
 
     async function fetchTime() {
@@ -97,6 +120,7 @@ export default function WorldTab() {
 
             if (!response.ok) {
                 Alert.alert("City not found or network error!");
+                return;
             }
 
             const data = await response.json();

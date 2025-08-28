@@ -99,6 +99,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',  // add vertical centering
     alignSelf: 'center',
     flexGrow: 0,
+    marginBottom: 30,
 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -202,7 +203,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 20,
     paddingHorizontal: 30,
-    marginTop: 40,
+    marginTop: 0,
 
     // shadows:
     shadowColor: '#000',
@@ -215,6 +216,6 @@ export const styles = StyleSheet.create({
   resultText: {
     color: 'rgba(255, 255, 255, 0.87)',
     textAlign: 'center',
-    fontSize: 19,
+    fontSize: 30,
   }
 });
